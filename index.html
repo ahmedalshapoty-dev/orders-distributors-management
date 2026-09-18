@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>إدارة الطلبات والموزعين</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #111827;
+      color: white;
+      min-height: 100vh;
+    }
+
+    header {
+      text-align: center;
+      padding: 18px 15px;
+      background: #0f172a;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    header p {
+      margin: 8px 0 0;
+      color: #cbd5e1;
+    }
+
+    .gallery {
+      max-width: 1200px;
+      margin: auto;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .image-container {
+      min-height: 70vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #projectImage {
+      max-width: 100%;
+      max-height: 75vh;
+      object-fit: contain;
+      border-radius: 12px;
+      box-shadow: 0 10px 35px rgba(0,0,0,.45);
+      background: white;
+    }
+
+    .filename {
+      margin-top: 15px;
+      font-size: 18px;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      margin-top: 18px;
+    }
+
+    button {
+      border: none;
+      padding: 12px 25px;
+      border-radius: 8px;
+      font-size: 17px;
+      cursor: pointer;
+      background: #2563eb;
+      color: white;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    #counter {
+      min-width: 80px;
+      font-size: 17px;
+    }
+
+    .loading {
+      font-size: 20px;
+      padding: 50px;
+    }
+
+    @media (max-width: 600px) {
+      header h1 {
+        font-size: 20px;
+      }
+
+      .gallery {
+        padding: 10px;
+      }
+
+      button {
+        padding: 10px 18px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>إدارة الطلبات والموزعين</h1>
+  <p>صور من نظام إدارة الطلبات والموزعين</p>
+</header>
+
+<div class="gallery">
+
+  <div id="loading" class="loading">
+    جاري تحميل الصور...
+  </div>
+
+  <div id="galleryContent" style="display:none;">
+
+    <div class="image-container">
+      <img id="projectImage" alt="صورة من النظام">
+    </div>
+
+    <div class="filename" id="filename"></div>
+
+    <div class="controls">
+
+      <button onclick="previousImage()">
+        السابق
+      </button>
+
+      <span id="counter"></span>
+
+      <button onclick="nextImage()">
+        التالي
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<script>
+
+const api =
+"https://api.github.com/repos/ahmedalshapoty-dev/orders-distributors-management/contents/";
+
+let images = [];
+let current = 0;
+
+
+fetch(api)
+
+.then(response => response.json())
+
+.then(files => {
+
+  images = files.filter(file => {
+
+    const name = file.name.toLowerCase();
+
+    return (
+      name.endsWith(".png") ||
+      name.endsWith(".jpg") ||
+      name.endsWith(".jpeg") ||
+      name.endsWith(".webp")
+    );
+
+  });
+
+
+  // وضع الشاشة الرئيسية في البداية
+  images.sort((a, b) => {
+
+    const aMain =
+      a.name.includes("الرئيس");
+
+    const bMain =
+      b.name.includes("الرئيس");
+
+    if (aMain && !bMain) return -1;
+    if (!aMain && bMain) return 1;
+
+    return a.name.localeCompare(b.name, "ar");
+
+  });
+
+
+  if (images.length === 0) {
+
+    document.getElementById("loading").innerText =
+    "لا توجد صور.";
+
+    return;
+
+  }
+
+
+  document.getElementById("loading").style.display =
+  "none";
+
+  document.getElementById("galleryContent").style.display =
+  "block";
+
+  showImage();
+
+})
+
+.catch(error => {
+
+  document.getElementById("loading").innerText =
+  "حدث خطأ أثناء تحميل الصور.";
+
+});
+
+
+function showImage() {
+
+  const image = images[current];
+
+  document.getElementById("projectImage").src =
+  image.download_url;
+
+  document.getElementById("filename").innerText =
+  image.name;
+
+  document.getElementById("counter").innerText =
+  (current + 1) + " / " + images.length;
+
+}
+
+
+function nextImage() {
+
+  current++;
+
+  if (current >= images.length) {
+    current = 0;
+  }
+
+  showImage();
+
+}
+
+
+function previousImage() {
+
+  current--;
+
+  if (current < 0) {
+    current = images.length - 1;
+  }
+
+  showImage();
+
+}
+
+
+// التنقل بأسهم لوحة المفاتيح
+document.addEventListener("keydown", function(event) {
+
+  if (event.key === "ArrowRight") {
+    nextImage();
+  }
+
+  if (event.key === "ArrowLeft") {
+    previousImage();
+  }
+
+});
+
+</script>
+
+</body>
+</html>
