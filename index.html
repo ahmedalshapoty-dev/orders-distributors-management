@@ -1,144 +1,841 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>عرض صور المشروع</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, Tahoma, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            margin: auto;
+        }
+
+        #loading {
+            text-align: center;
+            font-size: 20px;
+            color: #444;
+            padding: 40px;
+        }
+
+        #galleryContent {
+            display: none;
+            width: 100%;
+        }
+
+        .gallery {
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow:
+                0 8px 30px rgba(0, 0, 0, 0.08);
+
+            width: 100%;
+        }
+
+        .image-wrapper {
+            width: 100%;
+            min-height: 300px;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            background: #eeeeee;
+            overflow: hidden;
+        }
+
+        #projectImage {
+            display: block;
+
+            max-width: 100%;
+            width: auto;
+            height: auto;
+
+            max-height: 80vh;
+
+            object-fit: contain;
+
+            transition:
+                opacity 0.2s ease;
+        }
+
+        .info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            gap: 15px;
+
+            padding: 15px 20px;
+
+            background: #ffffff;
+
+            border-top: 1px solid #eeeeee;
+        }
+
+        #filename {
+            font-size: 16px;
+            color: #333;
+
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #counter {
+            direction: ltr;
+            unicode-bidi: isolate;
+
+            font-size: 16px;
+            font-weight: bold;
+
+            color: #555;
+
+            flex-shrink: 0;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            gap: 15px;
+
+            margin-top: 15px;
+        }
+
+        button {
+            border: none;
+
+            background: #1f2937;
+            color: white;
+
+            font-size: 18px;
+
+            padding: 12px 25px;
+
+            border-radius: 10px;
+
+            cursor: pointer;
+
+            transition:
+                background 0.2s ease,
+                transform 0.1s ease;
+        }
+
+        button:hover {
+            background: #111827;
+        }
+
+        button:active {
+            transform: scale(0.97);
+        }
+
+        @media (max-width: 768px) {
+
+            body {
+                padding: 10px;
+            }
+
+            .gallery {
+                border-radius: 10px;
+            }
+
+            .info {
+                padding: 12px;
+            }
+
+            #filename {
+                font-size: 14px;
+            }
+
+            #counter {
+                font-size: 14px;
+            }
+
+            button {
+                padding: 10px 18px;
+                font-size: 16px;
+            }
+
+            #projectImage {
+                max-height: 75vh;
+            }
+        }
+    </style>
+</head>
+
+
+<body>
+
+<div class="container">
+
+    <!-- شاشة التحميل -->
+    <div id="loading">
+        جاري تحميل الصور...
+    </div>
+
+
+    <!-- محتوى الصور -->
+    <div id="galleryContent">
+
+        <div class="gallery">
+
+            <div class="image-wrapper">
+
+                <img
+                    id="projectImage"
+                    src=""
+                    alt="صورة المشروع"
+                >
+
+            </div>
+
+
+            <div class="info">
+
+                <div id="filename"></div>
+
+                <div id="counter"></div>
+
+            </div>
+
+        </div>
+
+
+        <!-- أزرار التنقل -->
+        <div class="controls">
+
+            <button
+                type="button"
+                onclick="previousImage()"
+            >
+                السابق
+            </button>
+
+
+            <button
+                type="button"
+                onclick="nextImage()"
+            >
+                التالي
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
 <script>
-const api =
-"https://api.github.com/repos/ahmedalshapoty-dev/orders-distributors-management/contents/";
 
-let images = [];
-let current = 0;
-let isLoading = false;
+    /*
+    ========================================
+    رابط GitHub API
+    ========================================
+    */
 
-const imgElement = document.getElementById("projectImage");
-const filenameElement = document.getElementById("filename");
-const counterElement = document.getElementById("counter");
+    const api =
+        "https://api.github.com/repos/ahmedalshapoty-dev/orders-distributors-management/contents/";
 
-// حتى يظهر العداد بالترتيب الصحيح رغم أن الصفحة عربية
-counterElement.style.direction = "ltr";
 
-fetch(api)
-.then(response => response.json())
-.then(files => {
+    /*
+    ========================================
+    المتغيرات
+    ========================================
+    */
 
-    images = files.filter(file => {
-        const name = file.name.toLowerCase();
+    let images = [];
 
-        return (
-            name.endsWith(".png") ||
-            name.endsWith(".jpg") ||
-            name.endsWith(".jpeg") ||
-            name.endsWith(".webp")
-        );
-    });
+    let current = 0;
 
-    // الشاشة الرئيسية أول صورة
-    images.sort((a, b) => {
+    let isLoading = false;
 
-        const aMain = a.name.includes("الرئيس");
-        const bMain = b.name.includes("الرئيس");
 
-        if (aMain && !bMain) return -1;
-        if (!aMain && bMain) return 1;
+    /*
+    ========================================
+    عناصر الصفحة
+    ========================================
+    */
 
-        return a.name.localeCompare(b.name, "ar");
-    });
+    const imgElement =
+        document.getElementById("projectImage");
 
-    if (images.length === 0) {
-        document.getElementById("loading").innerText =
-        "لا توجد صور.";
-        return;
+    const filenameElement =
+        document.getElementById("filename");
+
+    const counterElement =
+        document.getElementById("counter");
+
+    const loadingElement =
+        document.getElementById("loading");
+
+    const galleryContent =
+        document.getElementById("galleryContent");
+
+
+    /*
+    ========================================
+    اتجاه العداد
+    ========================================
+    */
+
+    if (counterElement) {
+
+        counterElement.style.direction = "ltr";
+
     }
 
-    document.getElementById("loading").style.display = "none";
-    document.getElementById("galleryContent").style.display = "block";
 
-    showImage();
+    /*
+    ========================================
+    تحميل قائمة الصور
+    ========================================
+    */
 
-})
-.catch(() => {
-    document.getElementById("loading").innerText =
-    "حدث خطأ أثناء تحميل الصور.";
-});
+    fetch(api)
 
+        .then(async response => {
 
-function showImage() {
+            /*
+            إذا GitHub أعاد خطأ
+            */
 
-    if (images.length === 0) return;
+            if (!response.ok) {
 
-    const image = images[current];
+                let errorMessage =
+                    "فشل الاتصال بـ GitHub";
 
-    isLoading = true;
+                try {
 
-    // نعرض اسم الصورة والعداد مباشرة
-    filenameElement.innerText = image.name;
-    counterElement.innerText =
-        (current + 1) + " / " + images.length;
+                    const errorData =
+                        await response.json();
 
-    imgElement.style.opacity = "0.5";
+                    if (errorData.message) {
 
-    imgElement.onload = function() {
+                        errorMessage =
+                            errorData.message;
 
-        imgElement.style.opacity = "1";
-        isLoading = false;
+                    }
 
-        // تحميل الصورة التالية والسابقة مسبقاً
-        preloadNearbyImages();
-    };
+                }
 
-    imgElement.onerror = function() {
+                catch (error) {
 
-        isLoading = false;
-        imgElement.style.opacity = "1";
-    };
+                    console.error(error);
 
-    imgElement.src = image.download_url;
-}
+                }
 
 
-function preloadNearbyImages() {
+                throw new Error(
 
-    const nextIndex =
-        (current + 1) % images.length;
+                    "GitHub API Error: " +
+                    response.status +
+                    " - " +
+                    errorMessage
 
-    const previousIndex =
-        (current - 1 + images.length) % images.length;
+                );
 
-    const nextImage = new Image();
-    nextImage.src =
-        images[nextIndex].download_url;
-
-    const previousImage = new Image();
-    previousImage.src =
-        images[previousIndex].download_url;
-}
+            }
 
 
-function nextImage() {
+            return response.json();
 
-    current =
-        (current + 1) % images.length;
-
-    showImage();
-}
+        })
 
 
-function previousImage() {
+        .then(files => {
 
-    current =
-        (current - 1 + images.length) % images.length;
+            /*
+            التأكد أن الرد عبارة عن قائمة ملفات
+            */
 
-    showImage();
-}
+            if (!Array.isArray(files)) {
+
+                throw new Error(
+                    "GitHub لم يُرجع قائمة ملفات."
+                );
+
+            }
 
 
-// أسهم الكيبورد
-document.addEventListener("keydown", function(event) {
+            /*
+            اختيار الصور فقط
+            */
 
-    if (event.key === "ArrowRight") {
-        nextImage();
+            images =
+                files.filter(file => {
+
+                    const name =
+                        file.name.toLowerCase();
+
+
+                    return (
+
+                        name.endsWith(".png") ||
+
+                        name.endsWith(".jpg") ||
+
+                        name.endsWith(".jpeg") ||
+
+                        name.endsWith(".webp")
+
+                    );
+
+                });
+
+
+            /*
+            ========================================
+            ترتيب الصور
+            الشاشة الرئيسية أولاً
+            ========================================
+            */
+
+            images.sort((a, b) => {
+
+                const aMain =
+                    a.name.includes("الرئيس");
+
+                const bMain =
+                    b.name.includes("الرئيس");
+
+
+                if (aMain && !bMain) {
+
+                    return -1;
+
+                }
+
+
+                if (!aMain && bMain) {
+
+                    return 1;
+
+                }
+
+
+                return a.name.localeCompare(
+                    b.name,
+                    "ar"
+                );
+
+            });
+
+
+            /*
+            ========================================
+            إذا لا توجد صور
+            ========================================
+            */
+
+            if (images.length === 0) {
+
+                loadingElement.innerText =
+                    "لا توجد صور داخل المستودع.";
+
+                return;
+
+            }
+
+
+            /*
+            ========================================
+            إخفاء التحميل
+            وإظهار المعرض
+            ========================================
+            */
+
+            loadingElement.style.display =
+                "none";
+
+            galleryContent.style.display =
+                "block";
+
+
+            /*
+            عرض أول صورة
+            */
+
+            showImage();
+
+        })
+
+
+        .catch(error => {
+
+            /*
+            ========================================
+            عرض الخطأ
+            ========================================
+            */
+
+            console.error(
+                "ERROR:",
+                error
+            );
+
+
+            loadingElement.style.display =
+                "block";
+
+
+            loadingElement.innerHTML =
+
+                `
+                <div>
+                    حدث خطأ أثناء تحميل الصور.
+                    <br><br>
+                    <small>
+                        ${error.message}
+                    </small>
+                </div>
+                `;
+
+        });
+
+
+    /*
+    ========================================
+    عرض الصورة
+    ========================================
+    */
+
+    function showImage() {
+
+
+        /*
+        لا توجد صور
+        */
+
+        if (images.length === 0) {
+
+            return;
+
+        }
+
+
+        /*
+        حماية رقم الصورة
+        */
+
+        if (current < 0) {
+
+            current =
+                images.length - 1;
+
+        }
+
+
+        if (current >= images.length) {
+
+            current = 0;
+
+        }
+
+
+        const image =
+            images[current];
+
+
+        isLoading = true;
+
+
+        /*
+        ========================================
+        عرض اسم الصورة
+        ========================================
+        */
+
+        if (filenameElement) {
+
+            filenameElement.innerText =
+                image.name;
+
+        }
+
+
+        /*
+        ========================================
+        عرض العداد
+        ========================================
+        */
+
+        if (counterElement) {
+
+            counterElement.innerText =
+
+                (current + 1) +
+                " / " +
+                images.length;
+
+        }
+
+
+        /*
+        تخفيف الصورة أثناء التحميل
+        */
+
+        if (imgElement) {
+
+            imgElement.style.opacity =
+                "0.5";
+
+        }
+
+
+        /*
+        ========================================
+        بعد تحميل الصورة
+        ========================================
+        */
+
+        imgElement.onload =
+            function () {
+
+                imgElement.style.opacity =
+                    "1";
+
+                isLoading = false;
+
+
+                /*
+                تحميل الصور القريبة مسبقاً
+                */
+
+                preloadNearbyImages();
+
+            };
+
+
+        /*
+        ========================================
+        إذا فشل تحميل الصورة
+        ========================================
+        */
+
+        imgElement.onerror =
+            function () {
+
+                isLoading = false;
+
+                imgElement.style.opacity =
+                    "1";
+
+
+                console.error(
+                    "فشل تحميل الصورة:",
+                    image.download_url
+                );
+
+            };
+
+
+        /*
+        ========================================
+        تحميل الصورة
+        ========================================
+        */
+
+        imgElement.src =
+            image.download_url;
+
     }
 
-    if (event.key === "ArrowLeft") {
-        previousImage();
+
+    /*
+    ========================================
+    تحميل الصورة التالية والسابقة مسبقاً
+    ========================================
+    */
+
+    function preloadNearbyImages() {
+
+
+        if (images.length <= 1) {
+
+            return;
+
+        }
+
+
+        const nextIndex =
+
+            (current + 1) %
+            images.length;
+
+
+        const previousIndex =
+
+            (
+                current -
+                1 +
+                images.length
+            ) %
+
+            images.length;
+
+
+        /*
+        تحميل التالية
+        */
+
+        const nextImagePreload =
+            new Image();
+
+
+        nextImagePreload.src =
+
+            images[nextIndex]
+                .download_url;
+
+
+        /*
+        تحميل السابقة
+        */
+
+        const previousImagePreload =
+            new Image();
+
+
+        previousImagePreload.src =
+
+            images[previousIndex]
+                .download_url;
+
     }
 
-});
+
+    /*
+    ========================================
+    الصورة التالية
+    ========================================
+    */
+
+    function nextImage() {
+
+
+        if (images.length === 0) {
+
+            return;
+
+        }
+
+
+        current =
+
+            (current + 1) %
+            images.length;
+
+
+        showImage();
+
+    }
+
+
+    /*
+    ========================================
+    الصورة السابقة
+    ========================================
+    */
+
+    function previousImage() {
+
+
+        if (images.length === 0) {
+
+            return;
+
+        }
+
+
+        current =
+
+            (
+                current -
+                1 +
+                images.length
+            ) %
+
+            images.length;
+
+
+        showImage();
+
+    }
+
+
+    /*
+    ========================================
+    أسهم الكيبورد
+    ========================================
+    */
+
+    document.addEventListener(
+
+        "keydown",
+
+        function (event) {
+
+
+            /*
+            سهم اليمين
+            */
+
+            if (
+                event.key ===
+                "ArrowRight"
+            ) {
+
+                nextImage();
+
+            }
+
+
+            /*
+            سهم اليسار
+            */
+
+            if (
+                event.key ===
+                "ArrowLeft"
+            ) {
+
+                previousImage();
+
+            }
+
+        }
+
+    );
 
 </script>
+
+</body>
+
+</html>
